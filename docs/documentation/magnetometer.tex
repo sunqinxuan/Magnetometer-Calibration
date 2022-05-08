@@ -1,0 +1,194 @@
+\documentclass[10pt, a4paper]{article}
+\usepackage[margin=1 in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithm}
+\usepackage{bm}
+
+\newtheorem{theorem}{Theorem}
+
+\title{Introduction to Magnetometer Calibration}
+\author{Rishav}
+\date{December 2020}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+Magnetometers are used in spacecrafts to measure the geomagnetic field and deduce the orientation of the spacecraft by utilizing the reference model of Earth's magnetic field. Magnetometers are important sensor used in attitude determination of microsatellites with small orbits as the magnetic field is strong closer to Earth.
+
+\section{Magnetometer noise modeling}
+The magnetometers are subjected to various sources of error which can be either due to the fabrication of the magnetometer or due to the environment on which it used. Due to these sourses of errors, the readings of magnetometer is unsuitable to be used to compute the attitude of spacecraft. Hence, it is important to identify those errors and compensate them in software to get rid of errors. Renaudin classifies the magnetometer errors in two broad categories,
+\begin{enumerate}
+\item Instrumentation error
+\item Magnetic deviation
+\end{enumerate}
+
+\subsection{Instrumentation error}
+Instrumentation error are the constant error source that is due to the device itself. It is related to the way the magnetometer is fabricated.
+
+\paragraph*{Scale factor} \label{equ_mg_scale}
+Scale factor is the proportionality constants related to each axes of the magnetometer by which the true value is scaled.
+\begin{equation}
+\hat{\bm{h}} = \bm{S} \bm{h}_{m}  
+\end{equation}
+ Here, $$\bm{S} = \begin{bmatrix} s_{x} & 0 & 0 \\ 0  & s_{y} & 0  \\ 0 & 0 & s_{z} \end{bmatrix} $$ is the scale matrix and $s_{x}$, $s_{y}$ and $s_{z}$ are the scaling constants associated with each axis of the three-axis magnetometer.
+
+\paragraph*{Bias} \label{equ_mg_bias}
+Bias $\bm{b_{o}}$ is the offset of the magnetic field measurements by the magnetometer from the true value which it was supposed to read. In three-axis magnetometer there exists some bias associated with each coordinate axes i.e. $\bm{b_{i}} = [\, {b_{i}}_{x}, \: {b_{i}}_{y}, \: {b_{i}}_{z} \,]^{\intercal}$. 
+\begin{equation}
+\hat{\bm{h}} = \bm{h}_{m} + \bm{b}_{i}
+\end{equation}
+   
+\paragraph*{Non-orthogonality} \label{equ_mg_orthogonality}
+Non-orthogonality represents the misalignment of the three-axis magnetometer sensor from the coordinate frame that is regarded as the sensor frame. This misalignment can be modeled using orthogonal rotation matrix $\bm{M}$ that maps the actual sensor readings in misaligned frame to the sensor frame.
+\begin{equation}
+\hat{\bm{h}} = \bm{M} \bm{h}_{m} = [\bm{\varepsilon}_{x}, \: \bm{\varepsilon}_{y}, \: \bm{\varepsilon}_{z}]^{-1}
+\end{equation}
+
+where, $\bm{\varepsilon}_{x}$, $\bm{\varepsilon}_{y}$ and $\bm{\varepsilon}_{z} \in \mathbb{R}^{3}$ are the directions of the sensor's $x$, $y$ and $z$ axes respectively in the sensor frame. 
+
+\subsection{Magnetic deviation}
+Magnetic deviation represents the error introduced due to the magnetic field on the surrounding of the sensor.
+
+\paragraph*{Hard-iron} \label{equ_mg_hard}
+Hard-iron error refers to the offset resulting due to the permanently magnetized ferromagnetic components on the setup on which magnetometer is attached to. Since magnetometer and hard-iron sources rotates together, it can me mathematically modeled as a bias vector $\bm{b}_{h} = [\,{b_{h}}_{x} \: {b_{h}}_{y} \: {b_{h}}_{z} \,]^{\intercal}$ whose elements corresponds to the offset of magnetometer readings in each coordinate axes.
+
+\begin{equation}
+\hat{\bm{h}} = \bm{h}_{m} + \bm{b_{h}}
+\end{equation}
+
+\paragraph*{Soft iron} \label{equ_mg_soft}
+Soft-iron effect is defined as the error introduced when external geomagnetic field induces interfering magnetic field by interacting with ferromagnetic materials present around magnetometer. Soft-iron effect can change the magnitude as well as the direction of the $\hat{\bm{h}}$. Soft-iron effect is modeled using a matrix $\bm{A}_{s} \in \mathbb{R}^{3\times3}$ such that,
+
+\begin{equation}
+\hat{\bm{h}} = \bm{A}_{s} \, \bm{h}_{m}
+\end{equation}
+
+Using Eq.\,(\ref{equ_mg_scale}), Eq.\,(\ref{equ_mg_bias}), Eq.\,(\ref{equ_mg_orthogonality}), Eq.\,(\ref{equ_mg_hard}), and Eq.\,(\ref{equ_mg_soft}) representing each of the error sources discussed above we can now perform the complete error modeling of the magnetometer.
+
+\begin{equation} \label{eqn_noise_modeling}
+\hat{\bm{h}} = \bm{S}\bm{M}(\bm{A}_{s}\bm{h}_{m} + \bm{b}_{h}) + \bm{b}_{i} + \bm{\varepsilon}
+\end{equation}
+
+Here, $\bm{\varepsilon}$ is Gaussian whiteband noise $ \sim N(0, \: \sigma^{2}_{\varepsilon})$, and considered to be zero for simplification.
+
+Eqn.\,(\ref{eqn_noise_modeling}) is simplified to
+\begin{equation} \label{eqn_final_error}
+\hat{\bm{h}} = \bm{A}\bm{h}_{m} + \bm{b}
+\end{equation}
+
+where,
+$ \bm{A} \in \mathbb{R}^{3\times3} = \bm{S}\bm{M}\bm{A}_{s}$ is the matrix representating the combined effect of scale factors, misalignments, and soft iron disturbances. $\bm{b} = \bm{S}\bm{M}\bm{b}_{h} + \bm{b}_{i}$ is the combined bias.
+
+We can extract the true magnetometer reading $\hat{\bm{h}}$ from  $\bm{h}_m$ if the matrix $\bm{A}$ and vector $\bm{b}$ is determined by some algorithm. Doing this is known as magnetometer calibration. It is the calibrated magnetometer sensor readings that is used to determine orientation of spacecraft.
+
+\section{Magnetometer Calibration}
+Ideally, the norm of sensor readings from magnetometer should be equal to the magnitude of the geomagnetic field at that place. so, if three-axis magnetometer were rotated freely in three dimensions, then the locus described by the sensor readings should describe a sphere with radius equal to the magnitude of local Earth's magnetic field. Following equation constraints the measurements of perfect magnetometer in a perturbation free environment.
+
+\begin{equation} \label{eqn_constraint}
+H_m^2 - |\!| \bm{h}_m |\!|^2 = H_m^2 - \bm{h}_m^{\intercal}\bm{h}_m = 0
+\end{equation}
+
+where, $H_m$ is the norm of geomagnetic field intensity at the place where measurement $\bm{h}_m$ is done determined using geomagnetic model like IGRF model. Above equation implies that the expected norm and measurements are same so the magnetometer can be considered ideal. However from Eq.\,(\ref{eqn_final_error}) we know that sensor measurements can be modeled as follows.
+
+\begin{equation} \label{eqn_measurement_model}
+\bm{h}_{m} = \bm{A}^{-1} (\hat{\bm{h}} - \bm{b})
+\end{equation}
+
+From Eq.\,(\ref{eqn_constraint}) and Eq.\,(\ref{eqn_measurement_model}) we get,
+
+\begin{equation}
+(\hat{\bm{h}} - \bm{b})^{\intercal}\,\bm{Q}\,(\hat{\bm{h}} - \bm{b}) - H_m^2  = 0 
+\end{equation}
+
+where, $\bm{Q} = (\bm{A}^{-1})^{\intercal}\bm{A}^{-1}$. The equation can be expanded to obtain quadratic equation.
+
+\begin{equation} \label{eqn_mag_quadratic}
+\hat{\bm{h}}^{\intercal} \bm{Q} \hat{\bm{h}} + \bm{u}^{\intercal} \hat{\bm{h}} + k = 0
+\end{equation}
+
+where, $\bm{u} = -2\bm{Q}^{\intercal}\bm{h}$, and $k = \bm{b}^{\intercal} \bm{Q} \bm{b} - H_{m}^{2}$. Eq.\,(\ref{eqn_mag_quadratic}) represents the general equation of plane of second order so it might represent a hyperboloid, a cone, or an ellipsoid. The equation is ellipsoid if following condition holds:
+
+\begin{equation} \label{eqn_ineqn}
+\bm{u}^{\intercal}\bm{Q}^{-1}\bm{u} > 4k
+\end{equation}
+
+This inequality in the equation form is,
+\begin{equation}
+\bm{u}^{\intercal}\bm{Q}^{-1}\bm{u} - 4k = H_m^2
+\end{equation}
+
+We know that the magnitude of the magnetic field of earth is strictly positive and due to this reason Eq.\.(\ref{eqn_ineqn}) holds. It implies that Eq.\,(\ref{eqn_mag_quadratic}) is general equation of ellipsoid. 
+
+This connection suggests that locus described by the readings of uncalibrated three-axis magnetometer is ellipsoid in nature. If we could determine parameters in Eq.\,(\ref{eqn_mag_quadratic}), $\bm{A}$ and $\bm{b}$ can be determined which are used to estimate $\bm{\hat{h}}$ using Eq.\,(\ref{eqn_mag_quadratic}).
+
+\subsection{Ellipsoid fitting algorithm}
+Least Squares Ellipsoid Specific Fitting is the ellipsoid fitting algorithm that we used to estimate the parameters of Eq.\,(\ref{eqn_mag_quadratic}) from the magnetometer readings. This paper develops a sufficient condition for a quadratic surface to be ellipsoid and develops closed form solution for ellipsoid fitting based on this constraint. This algorithm is claimed to be stable, fast and robust to noise in the data. If the algorithm were treated as black box, it generates the  coefficients of the general equation of ellipsoid for given $n$ sets of three dimensional points. In our case, those points will be the readings from magnetometer. 
+
+The general equation of the second degree in three variables is
+\begin{equation} \label{eqn_general_quadric}
+ax^{2} + by^{2} + cz^{2} + 2fyz + 2 gxz + 2hxy + 2px + 2qy + 2rz + d = 0
+\end{equation}
+
+Let,
+\begin{equation}
+\begin{split}
+I &= a + b + c \\
+J &= ab + bc + ac - f^{2} - g^{2} - h^{2} \\
+K &= \begin{vmatrix} \,a&h&g\,\\\,h&b&f\,\\\,g&f&c\,\end{vmatrix} 
+\end{split}
+\end{equation}
+
+Eq.\,(\ref{eqn_general_quadric}) with the constraint of $4J - I ^{2}> 0$ represents the general equation of ellipsoid. Hence the least squares fitting problem is formulated as follows:
+\begin{equation} \label{eqn_ellipsoid_problem}
+min|\!| \bm{D}\bm{v} |\!| \quad \text{subject to} \quad 4J - I^{2} = 1 
+\end{equation}
+
+where $\bm{D} \in \mathbb{R}^{10\times n}$ is the design matrix defined as 
+\begin{equation} \label{eqn_design_matrix}
+\bm{D} = [\,\bm{w}_{1},\: \bm{w}_{2},\: ... \:,\: \bm{w}_{n}\,].
+\end{equation}
+
+The solution to this least squares problem appears as the eigenvalue problem
+\begin{equation}
+\bm{C}_{1}^{-1}(\bm{S}_{11}-\bm{S}_{12}\bm{S}_{22}^{-1}\bm{S}_{12}^{\intercal}) \, \bar{\bm{v}} = \lambda \, \bar{\bm{v}}
+\end{equation}
+
+where $\bm{C}_{1} \in \mathbb{R}^{6\times6}$, $\bm{S}_{11} \in \mathbb{R}^{6\times6}$, $\bm{S}_{12} \in \mathbb{R}^{6\times4}$ and $\bm{S}_{22} \in \mathbb{R}^{4\times4}$ are defined as
+\begin{equation}\label{eqn_SandC}
+\bm{D}\bm{D}^{\intercal} = \begin{bmatrix} \bm{S}_{11} & \bm{S}_{12} \\\bm{S}_{12}^{\intercal} & \bm{S}_{22}\end{bmatrix} \text{ and }
+\bm{C}_{1} = 
+\begin{bmatrix}
+-1&1&1&0&0&0 \\ 1&-1&1&0&0&0 \\ 1&1&-1&0&0&0\\ 0&0&0&-4&0&0 \\ 0&0&0&0&-4&0\\ 0&0&0&0&0&-4
+\end{bmatrix}.
+\end{equation}
+
+Let $\bm{v}_{1} \in \mathbb{R}^{6}$ be the eigenvector associated with largest eigenvalue of $\bm{C}_{1}^{-1}(\bm{S}_{11}-\bm{S}_{12}\bm{S}_{22}^{-1}\bm{S}_{12}^{\intercal}) \in \mathbb{R}^{6\times6}$. The ellipsoid vector $\bm{v}$ can now be evaluated as
+\begin{equation}\label{eqn_ellipsoid_soln}
+\bm{v} = [\,\bm{v}_{1}^{\intercal},
+\: \bm{v}_{2}^{\intercal}\,]^{\intercal}
+\end{equation}
+
+where $\bm{v}_{2} \in \mathbb{R}^{4}  = \bm{S}_{22}^{-1}\bm{S}_{12}^{\intercal}\bm{v}_{1}$. $\bm{v}$ in Eq.\,(\ref{eqn_ellipsoid_soln}) is solution to Eq.\,(\ref{eqn_ellipsoid_problem}). Algorithm (\ref{algorithm_ellipsoid}) shows the implementation procedure to implement ellipsoid fitting.
+
+\begin{algorithm} 
+\label{algorithm_ellipsoid}
+\caption{Least Squares Ellipsoid Fitting}
+\begin{algorithmic}[1]
+\State \textbf{Inputs:}
+\Statex \quad $\bm{x} = [\,x_{1},\:x_{2}\,\:...\:,\: x_{n}\,]$, $\bm{y} = [\,y_{1},\:y_{2}\,\:...\:,\: y_{n} \,]$, and $\bm{z} = [\,z_{1},\:z_{2}\,\:...\:,\: z_{n} \,]$
+    \State Initialize design matrix $\bm{D}$ and $\bm{C}_{1}$ using Eq.\,(\ref{eqn_design_matrix}) and Eq.\,(\ref{eqn_SandC}) respectively. 
+    \State Find $\bm{S}_{11}$, $\bm{S}_{12}$ and $\bm{S}_{22}$ using Eq.\,(\ref{eqn_SandC}).
+    \State Find the eigenvector $\bm{v}_{1}$ associated with largest eigenvalue of $\bm{C}_{1}^{-1}(\bm{S}_{11}-\bm{S}_{12}\bm{S}_{22}^{-1}\bm{S}_{12}^{\intercal})$
+    \State Compute $\bm{v}_{2} = \bm{S}_{22}^{-1}\bm{S}_{12}^{\intercal}\bm{v}_{1}$.
+    \State Return ellipsoid vector $\bm{v} = [\,\bm{v}_{1}^{\intercal}, \: \bm{v}_{2}^{\intercal}\,]^{\intercal}$
+\end{algorithmic}
+\end{algorithm}
+
+% \section{Results}
+% To make sure that the magetometer calibration works fine, implementation of the the ellipsoid fitting algorithm needs to be tested. We generated noisy data points for ellipsoid and performed ellipsoid fitting for various cases. Being confident on the implementation, we went to the testing of magnetometer calibration. 
+
+\end{document}
