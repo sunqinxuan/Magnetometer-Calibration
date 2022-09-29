@@ -21,7 +21,7 @@ x = x_c + rho*sin(phi).*cos(theta);
 y = y_c + rho*sin(phi).*sin(theta);
 z = z_c + rho*cos(phi);
 
-mesh(x,y,z)
+mesh(x,y,z,'FaceAlpha','0.4')
 axis equal
 hold on;
 end

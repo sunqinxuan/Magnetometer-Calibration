@@ -105,7 +105,7 @@ y_ = reshape(y_,grid_size,grid_size);
 z_ = reshape(z_,grid_size,grid_size);
 
 % Plot the ellipsoid corresponding to input coefficients
-mesh(x_,y_,z_,'FaceAlpha','0.4','MarkerFaceColor','red')
+mesh(x_,y_,z_,'MarkerFaceColor','red')
 hold on;
 axis equal
 hold on;

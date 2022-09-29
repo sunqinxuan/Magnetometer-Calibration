@@ -35,51 +35,72 @@ Z_cal = zeros(length(x_hat),1);
 % v = [a, b, c, f, g, h, p, q, r, d]' (in the paper k = -d)
 % Q = [a h g; h b f; g f c]
 % u = [p, q, r]'
-v = ellipsoid_fit(x_hat,y_hat,z_hat); 
-Q = [v(1),v(6),v(5);v(6),v(2),v(4);v(5),v(4),v(3)];
-u = [v(7),v(8),v(9)]';
-k = v(10);
+v = ellipsoid_fit(x_hat,y_hat,z_hat);
 
-if SWITCH == 1
-     scale = 1;
-     radius = sqrt(u'*(Q\u)-k);
-elseif SWITCH == 0
-    scale = (1/sqrt(u'*(Q\u)-k));
-    radius = 1;
-end
+% Unpack ellipsoid coefficients
+a = v(1); b = v(2); c = v(3);
+f = v(4); g = v(5); h = v(6); 
+p = v(7); q = v(8); r = v(9); 
+d = v(10); 
 
-b = - Q \ u; % Eqn(21)
-Ainv = real(scale*sqrt(Q)); % Eqn(13) and Eqn(14) 
-    
-% For every data 
+% Coordinate frame transformation i.e diagonalize M 
+Q =[a, h, g; h, b, f; g, f, c]; % Original ellipsoid matrix 
+u = [p, q, r]';
+k = d;
+
+[evec, eval]=eig(Q); % Compute eigenvectors matrix
+rotation = evec'; % DCM = eigenvectors matrix
+offset = - Q \ u; % Eqn(21)
+eval = -eval
+M_ = evec'*Q*evec; % Diagonalize M
+
+% Coefficients of the ellipsoid in new frame
+% Note the ellipsoid is not rotating in this new frame so f, g and h = 0 
+pqr_ = [p,q,r]*evec;   
+a_ = M_(1,1);
+b_ = M_(2,2);
+c_ = M_(3,3);
+p_ = pqr_(1);
+q_ = pqr_(2);
+r_ = pqr_(3);
+d_ = d;
+
+% Semi principal axes (Still no rotation)
+ax_ = sqrt(p_^2/a_^2 + q_^2/(a_*b_) + r_^2/(a_*c_) - d_/a_)
+bx_ = sqrt(p_^2/(a_*b_) + q_^2/b_^2 + r_^2/(b_*c_) - d_/b_)
+cx_ = sqrt(p_^2/(a_*c_) + q_^2/(b_*c_) + r_^2/c_^2 - d_/c_)
+gain = [1/ax_, 0, 0; 0, 1/bx_, 0; 0,0,1/cx_];
+
+Ainv  = gain*rotation;
 for i_iters = 1:length(x_hat)
     % Sensor data
     h_hat = [x_hat(i_iters); y_hat(i_iters); z_hat(i_iters)]; 
     
     % Calibration, Eqn(11)
-    h = Ainv*(h_hat - b);
+    h = gain*rotation*(h_hat - offset);
     
     % Calibrated values
     X_cal(i_iters) = h(1);
     Y_cal(i_iters) = h(2);
     Z_cal(i_iters) = h(3);
 end
-    
+
 % Plot uncalibrated data
-subplot(1,2,1);
+##subplot(1,2,1);
 plot_ellipsoid(v); 
-hold on;
+##hold on;
 
 scatter3(x_hat,y_hat,z_hat,'fill','MarkerFaceColor','red');
 title({'Before magnetometer calibration','(Ellipsoid fitted)'});
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 axis equal;
 
-% Plot calibrated data
-subplot(1,2,2);
-plot_sphere([0,0,0],radius);
-hold on;
+##% Plot calibrated data
+##subplot(1,2,2);
+##plot_sphere([0,0,0],radius);
+##hold on;
 
+figure;
 scatter3(X_cal,Y_cal,Z_cal,'fill','MarkerFaceColor','blue');
 if SWITCH == 0
     title({'After magnetometer calibration','(Normalized to unit circle)'});
@@ -97,4 +118,4 @@ fprintf('\n\t\t\t\th_hat = M*(h_m - b) \nWhere,')
 fprintf('\nh_m   = Measured sensor data vector');
 fprintf('\nh_hat = Calibrated sensor data vector');
 fprintf('\n\nM =\n'); disp(Ainv);
-fprintf('\nb =\n'); disp(b);
+fprintf('\nb =\n'); disp(offset);
