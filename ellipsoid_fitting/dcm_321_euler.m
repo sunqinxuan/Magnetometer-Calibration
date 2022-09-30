@@ -1,4 +1,4 @@
-function [C] = dcm321Euler(psi,theta,phi)
+function [C] = dcm_321_euler(psi,theta,phi)
 %%% DCM in terms of (3-2-1) Euler angles
 % Maps a vector from inertial to body frame: V_b = C*V_i
 %   
@@ -26,4 +26,4 @@ s3 = sin(phi);
 C = [   c2*c1,              c2*s1,              -s2;    ... 
         s3*s2*c1 - c3*s1,   s3*s2*s1 + c3*c1,   s3*c2;  ...    
         c3*s2*c1 + s3*s1,   c3*s2*s1 - s3*c1,   c3*c2  ];
-end
+endfunction
