@@ -13,14 +13,58 @@ clc
 clear
 close all
 
+
+addpath('.\data')
+
+data_original_filename = 'Flt1002_train.h5';
+line_number = 1002.02; 
+
+% data_info = h5info(data_original_filename);
+data_line = h5read(data_original_filename,'/line');
+i1 = find(data_line==line_number, 1 );
+i2 = find(data_line==line_number, 1, 'last' );
+
+tt=readH5File(data_original_filename,'/tt',i1,i2);
+
+flux_b_x=readH5File(data_original_filename,'/flux_d_x',i1,i2);
+flux_b_y=readH5File(data_original_filename,'/flux_d_y',i1,i2);
+flux_b_z=readH5File(data_original_filename,'/flux_d_z',i1,i2);
+
+flux_b_t=readH5File(data_original_filename,'/flux_b_t',i1,i2);
+mag_1_uc=readH5File(data_original_filename,'/mag_1_uc',i1,i2);
+mag_1_c=readH5File(data_original_filename,'/mag_1_c',i1,i2);
+mag_1_dc=readH5File(data_original_filename,'/mag_1_dc',i1,i2);
+mag_1_igrf=readH5File(data_original_filename,'/mag_1_igrf',i1,i2);
+
+% figure;
+% plot(tt,mag_1_uc,'r');hold on;
+% plot(tt,mag_1_c,'g');hold on;
+% plot(tt,mag_1_dc,'b');hold on;
+% % plot(tt,mag_1_igrf,'k');hold on;
+
+w_x=readH5File(data_original_filename,'/roll_rate',i1,i2);
+w_y=readH5File(data_original_filename,'/pitch_rate',i1,i2);
+w_z=readH5File(data_original_filename,'/yaw_rate',i1,i2);
+
+%%
+anomaly_map_file='Canada_MAG_RES_200m.hdf5';
+anomaly_map = h5read(anomaly_map_file,'/map');
+anomaly_map_xx=h5read(anomaly_map_file,'/xx');
+anomaly_map_yy=h5read(anomaly_map_file,'/yy');
+
+%%
+
 % Import raw magnetometer readings
-file = 'sensor_data.txt'; 
+% file = 'sensor_data.txt'; 
 
 % Import sensor readings
-raw = importdata(file);
-x_m = raw(:,1); 
-y_m = raw(:,2); 
-z_m = raw(:,3);
+% raw = importdata(file);
+% x_m = raw(:,1); 
+% y_m = raw(:,2); 
+% z_m = raw(:,3);
+x_m=flux_b_x;
+y_m=flux_b_y;
+z_m=flux_b_z;
 
 % Ellipsoid fit
 % ax^2 + by^2 + cz^2 + 2fyz + 2gxz + 2hxy + 2px + 2qy + 2rz + d = 0
