@@ -26,9 +26,9 @@ i2 = find(data_line==line_number, 1, 'last' );
 
 tt=readH5File(data_original_filename,'/tt',i1,i2);
 
-flux_b_x=readH5File(data_original_filename,'/flux_d_x',i1,i2);
-flux_b_y=readH5File(data_original_filename,'/flux_d_y',i1,i2);
-flux_b_z=readH5File(data_original_filename,'/flux_d_z',i1,i2);
+flux_b_x=readH5File(data_original_filename,'/flux_c_x',i1,i2);
+flux_b_y=readH5File(data_original_filename,'/flux_c_y',i1,i2);
+flux_b_z=readH5File(data_original_filename,'/flux_c_z',i1,i2);
 
 flux_b_t=readH5File(data_original_filename,'/flux_b_t',i1,i2);
 mag_1_uc=readH5File(data_original_filename,'/mag_1_uc',i1,i2);
@@ -42,15 +42,16 @@ mag_1_igrf=readH5File(data_original_filename,'/mag_1_igrf',i1,i2);
 % plot(tt,mag_1_dc,'b');hold on;
 % % plot(tt,mag_1_igrf,'k');hold on;
 
-w_x=readH5File(data_original_filename,'/roll_rate',i1,i2);
-w_y=readH5File(data_original_filename,'/pitch_rate',i1,i2);
-w_z=readH5File(data_original_filename,'/yaw_rate',i1,i2);
+% w_x=readH5File(data_original_filename,'/roll_rate',i1,i2);
+% w_y=readH5File(data_original_filename,'/pitch_rate',i1,i2);
+% w_z=readH5File(data_original_filename,'/yaw_rate',i1,i2);
 
-%%
-anomaly_map_file='Canada_MAG_RES_200m.hdf5';
-anomaly_map = h5read(anomaly_map_file,'/map');
-anomaly_map_xx=h5read(anomaly_map_file,'/xx');
-anomaly_map_yy=h5read(anomaly_map_file,'/yy');
+utm_x=readH5File(data_original_filename,'/utm_x',i1,i2);
+utm_y=readH5File(data_original_filename,'/utm_y',i1,i2);
+
+mag_anomaly=read_anomaly_map('Canada_MAG_RES_200m.hdf5',utm_x,utm_y);
+
+mag_diurnal=readH5File(data_original_filename,'/diurnal',i1,i2);
 
 %%
 
@@ -107,7 +108,7 @@ cx_ = sqrt(p_^2/(a_*c_) + q_^2/(b_*c_) + r_^2/c_^2 - d_/c_);
 
 offset = - M \ u; % Eqn(21)
 gain = [1/ax_, 0, 0; 0, 1/bx_, 0; 0,0,1/cx_];
-matrix = gain*rotation;
+matrix = gain*rotation*53975.3;
 
 % Calibration %
 % Memory to calibrated readings 
@@ -131,15 +132,15 @@ end
 % Sensor readings and ellipoid fit
 scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
 plot_ellipsoid(v); 
-title({'Before magnetometer calibration', '(Ellipsoid fit)'});
-xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
-axis equal;
+% title({'Before magnetometer calibration', '(Ellipsoid fit)'});
+% xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
+% axis equal;
 
 % After calibrations
-figure;
+% figure;
 scatter3(x_hat, y_hat, z_hat, 'fill', 'MarkerFaceColor', 'blue'); hold on;
-plot_sphere([0,0,0]', 1);
-title({'After magnetometer calibration', '(Normalized to unit sphere)'});
+plot_sphere([0,0,0]', 53975.3);
+% title({'After magnetometer calibration', '(Normalized to unit sphere)'});
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 axis equal;
 
