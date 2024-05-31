@@ -30,7 +30,8 @@ z_m=readDataField(file_name,'/flux_c_z',i1,i2);
 utm_x=readDataField(file_name,'/utm_x',i1,i2);
 utm_y=readDataField(file_name,'/utm_y',i1,i2);
 
-[mag_anomaly,map_idx_x,map_idx_y]=read_anomaly_map('Canada_MAG_RES_200m.hdf5',utm_x,utm_y);
+mag_anomaly=read_anomaly_map('Canada_MAG_RES_200m.hdf5',utm_x,utm_y);
+
 
 mag_diurnal=readDataField(file_name,'/diurnal',i1,i2);
 

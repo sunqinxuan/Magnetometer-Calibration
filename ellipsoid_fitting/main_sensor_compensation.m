@@ -5,29 +5,46 @@ close all
 addpath('.\data')
 addpath('..\m_IGRF')
 
-% data_original_filename = 'Flt1003_train.h5';
-% time = datenum([2020 6 29]);
-% lines={1003.02,1003.04,1003.08};
-% load('model_Flt1002.mat');
+data_original_filename = 'Flt1003_train.h5';
+time = datenum([2020 6 29]);
+lines={1003.02,1003.04,1003.08};
+load('model_Flt1002.mat');
 
-data_original_filename = 'Flt1007_train.h5';
-time = datenum([2020 7 7]);
-lines={1007.02,1007.06};
-load('model_Flt1006.mat');
+% data_original_filename = 'Flt1007_train.h5';
+% time = datenum([2020 7 7]);
+% lines={1007.02,1007.06};
+% load('model_Flt1006.mat');
 
 tt=[];
 x_m=[];
 y_m=[];
 z_m=[];
 mag_earth=[];
+map_idx_x=[];
+map_idx_y=[];
 for i=1:size(lines,2)
-    [tt_tmp,x_m_tmp,y_m_tmp,z_m_tmp,mag_earth_tmp]=readH5File(data_original_filename, lines{i}, time);
+    [tt_tmp,x_m_tmp,y_m_tmp,z_m_tmp,mag_earth_tmp,map_idx_x_tmp,map_idx_y_tmp]=readH5File(data_original_filename, lines{i}, time);
     tt=[tt;tt_tmp];
     x_m=[x_m;x_m_tmp];
     y_m=[y_m;y_m_tmp];
     z_m=[z_m;z_m_tmp];
     mag_earth=[mag_earth;mag_earth_tmp];
+    map_idx_x=[map_idx_x;map_idx_x_tmp];
+    map_idx_y=[map_idx_y;map_idx_y_tmp];
 end
+
+anomaly_map= h5read('Canada_MAG_RES_200m.hdf5','/map');
+max_value=max(max(anomaly_map));
+img_traj=anomaly_map;
+for i=1:size(map_idx_x,1)
+    img_traj(map_idx_y(i),map_idx_x(i))=max_value;
+    img_traj(map_idx_y(i)-1,map_idx_x(i))=max_value;
+    img_traj(map_idx_y(i),map_idx_x(i)-1)=max_value;
+    img_traj(map_idx_y(i)+1,map_idx_x(i))=max_value;
+    img_traj(map_idx_y(i),map_idx_x(i)+1)=max_value;
+end
+figure;
+imshow(img_traj,[]);
 
 %%
 
@@ -133,6 +150,7 @@ end
 residual_h_m_mean=mean(residual_h_m);
 residual_h_hat_mean=mean(residual_h_hat);
 
+figure;
 % Visualization %
 % Sensor readings and ellipoid fit
 scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
@@ -145,6 +163,7 @@ plot_sphere([0,0,0]', mag_earth_intensity);
 % title({'After magnetometer calibration', '(Normalized to unit sphere)'});
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 axis equal;
+legend('before calibration: measured data','before calibration: fitted ellipsoid','after calibration: calibrated data','after calibration: sphere');
 
 % Print calibration params
 fprintf('3D magnetometer calibration based on ellipsoid fitting');

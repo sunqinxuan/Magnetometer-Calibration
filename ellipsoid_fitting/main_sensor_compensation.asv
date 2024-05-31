@@ -6,24 +6,28 @@ addpath('.\data')
 addpath('..\m_IGRF')
 
 data_original_filename = 'Flt1003_train.h5';
-time = datenum([2020 6 29]); % data of flight 1003
-
+time = datenum([2020 6 29]);
+lines={1003.02,1003.04,1003.08};
 load('model_Flt1002.mat');
 
-line_number = 1003.02; 
-[tt_1,x_m_1,y_m_1,z_m_1,mag_earth_1]=readH5File(data_original_filename, line_number, time);
+% data_original_filename = 'Flt1007_train.h5';
+% time = datenum([2020 7 7]);
+% lines={1007.02,1007.06};
+% load('model_Flt1006.mat');
 
-line_number = 1003.04; 
-[tt_2,x_m_2,y_m_2,z_m_2,mag_earth_2]=readH5File(data_original_filename, line_number, time);
-
-line_number = 1003.08; 
-[tt_3,x_m_2,y_m_2,z_m_2,mag_earth_2]=readH5File(data_original_filename, line_number, time);
-
-tt=[tt_1;tt_2];
-x_m=[x_m_1;x_m_2];
-y_m=[y_m_1;y_m_2];
-z_m=[z_m_1;z_m_2];
-mag_earth=[mag_earth_1;mag_earth_2];
+tt=[];
+x_m=[];
+y_m=[];
+z_m=[];
+mag_earth=[];
+for i=1:size(lines,2)
+    [tt_tmp,x_m_tmp,y_m_tmp,z_m_tmp,mag_earth_tmp]=readH5File(data_original_filename, lines{i}, time);
+    tt=[tt;tt_tmp];
+    x_m=[x_m;x_m_tmp];
+    y_m=[y_m;y_m_tmp];
+    z_m=[z_m;z_m_tmp];
+    mag_earth=[mag_earth;mag_earth_tmp];
+end
 
 %%
 
@@ -99,8 +103,8 @@ mag_earth_intensity=mean(mag_earth);
 
 % R=[0,1,0;1,0,0;0,0,1];
 % matrix=matrix*R;
-residual_h_m=zeros(size(tt));
-residual_h_hat=zeros(size(tt));
+residual_h_m=zeros(size(x_m));
+residual_h_hat=zeros(size(x_m));
 
 % Calibration %
 % Memory to calibrated readings 
@@ -133,9 +137,6 @@ residual_h_hat_mean=mean(residual_h_hat);
 % Sensor readings and ellipoid fit
 scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
 plot_ellipsoid(v); 
-% title({'Before magnetometer calibration', '(Ellipsoid fit)'});
-% xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
-% axis equal;
 
 % After calibrations
 % figure;
