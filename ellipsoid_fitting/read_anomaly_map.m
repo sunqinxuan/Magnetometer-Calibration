@@ -54,5 +54,5 @@ else
     end
 end
 
-% figure;
-% imshow(img_traj,[]);
+figure;
+imshow(img_traj,[]);

@@ -16,65 +16,42 @@ close all
 addpath('.\data')
 addpath('..\m_IGRF')
 
-data_original_filename = 'Flt1002_train.h5';
-line_number = 1002.02; 
+% data_original_filename = 'Flt1002_train.h5';
+% time = datenum([2020 6 20]); 
+% lines={1002.02,1002.20};
 
-% data_info = h5info(data_original_filename);
-data_line = h5read(data_original_filename,'/line');
-i1 = find(data_line==line_number, 1 );
-i2 = find(data_line==line_number, 1, 'last' );
+data_original_filename = 'Flt1006_train.h5';
+time = datenum([2020 7 6]); 
+lines={1006.04,1006.04,1006.08};
 
-tt=readH5File(data_original_filename,'/tt',i1,i2);
+tt=[];
+x_m=[];
+y_m=[];
+z_m=[];
+mag_earth=[];
+for i=1:size(lines,2)
+    [tt_tmp,x_m_tmp,y_m_tmp,z_m_tmp,mag_earth_tmp]=readH5File(data_original_filename, lines{i}, time);
+    tt=[tt;tt_tmp];
+    x_m=[x_m;x_m_tmp];
+    y_m=[y_m;y_m_tmp];
+    z_m=[z_m;z_m_tmp];
+    mag_earth=[mag_earth;mag_earth_tmp];
+end
 
-flux_b_x=readH5File(data_original_filename,'/flux_c_x',i1,i2);
-flux_b_y=readH5File(data_original_filename,'/flux_c_y',i1,i2);
-flux_b_z=readH5File(data_original_filename,'/flux_c_z',i1,i2);
+% line_number = 1002.20; 
+% [tt_2,x_m_2,y_m_2,z_m_2,mag_earth_2]=readH5File(data_original_filename, line_number, time);
 
-flux_b_t=readH5File(data_original_filename,'/flux_b_t',i1,i2);
-mag_1_uc=readH5File(data_original_filename,'/mag_1_uc',i1,i2);
-mag_1_c=readH5File(data_original_filename,'/mag_1_c',i1,i2);
-mag_1_dc=readH5File(data_original_filename,'/mag_1_dc',i1,i2);
-mag_1_igrf=readH5File(data_original_filename,'/mag_1_igrf',i1,i2);
+% tt=[tt_1;tt_2];
+% x_m=[x_m_1;x_m_2];
+% y_m=[y_m_1;y_m_2];
+% z_m=[z_m_1;z_m_2];
+% mag_earth=[mag_earth_1;mag_earth_2];
 
 % figure;
+% plot(tt,mag_earth,'k');hold on;
 % plot(tt,mag_1_uc,'r');hold on;
 % plot(tt,mag_1_c,'g');hold on;
 % plot(tt,mag_1_dc,'b');hold on;
-% % plot(tt,mag_1_igrf,'k');hold on;
-
-% w_x=readH5File(data_original_filename,'/roll_rate',i1,i2);
-% w_y=readH5File(data_original_filename,'/pitch_rate',i1,i2);
-% w_z=readH5File(data_original_filename,'/yaw_rate',i1,i2);
-
-utm_x=readH5File(data_original_filename,'/utm_x',i1,i2);
-utm_y=readH5File(data_original_filename,'/utm_y',i1,i2);
-
-mag_anomaly=read_anomaly_map('Canada_MAG_RES_200m.hdf5',utm_x,utm_y);
-
-mag_diurnal=readH5File(data_original_filename,'/diurnal',i1,i2);
-
-baro=readH5File(data_original_filename,'/baro',i1,i2);
-lat=readH5File(data_original_filename,'/lat',i1,i2);
-lon=readH5File(data_original_filename,'/lon',i1,i2);
-
-mag_earth=zeros(size(lat));
-time = datenum([2020 6 20]); % data of flight 1002
-gh = loadigrfcoefs(time);
-for i=1:size(lat,1)
-    latitude=lat(i);
-    longitude=lon(i);
-    altitude=baro(i)*1e-3;
-    [Bx, By, Bz] = igrf(gh, latitude, longitude, altitude, 'geod');
-    mag_earth(i)=norm([Bx,By,Bz])+mag_anomaly(i)+mag_diurnal(i);
-end
-
-%%
-
-figure;
-plot(tt,mag_earth,'k');hold on;
-plot(tt,mag_1_uc,'r');hold on;
-plot(tt,mag_1_c,'g');hold on;
-plot(tt,mag_1_dc,'b');hold on;
 
 %%
 
@@ -88,9 +65,9 @@ mag_earth_intensity=mean(mag_earth);
 % x_m = raw(:,1); 
 % y_m = raw(:,2); 
 % z_m = raw(:,3);
-x_m=flux_b_x;
-y_m=flux_b_y;
-z_m=flux_b_z;
+% x_m=flux_b_x;
+% y_m=flux_b_y;
+% z_m=flux_b_z;
 
 % Ellipsoid fit
 % ax^2 + by^2 + cz^2 + 2fyz + 2gxz + 2hxy + 2px + 2qy + 2rz + d = 0
@@ -137,8 +114,8 @@ matrix = gain*rotation*mag_earth_intensity;
 
 % R=[0,1,0;1,0,0;0,0,1];
 % matrix=matrix*R;
-residual_h_m=zeros(size(tt));
-residual_h_hat=zeros(size(tt));
+residual_h_m=zeros(size(x_m));
+residual_h_hat=zeros(size(x_m));
 
 % Calibration %
 % Memory to calibrated readings 
@@ -164,8 +141,12 @@ for i_iters = 1:length(x_m)
     residual_h_hat(i_iters)=abs(norm(h)-mag_earth_intensity);
 end
 
-residual_h_m_mean=mean(residual_h_m)
-residual_h_hat_mean=mean(residual_h_hat)
+cell_str=strsplit(data_original_filename,'_');
+save_mat_name=['model_',cell_str{1,1},'.mat'];
+save(save_mat_name,'matrix','offset','v');
+
+residual_h_m_mean=mean(residual_h_m);
+residual_h_hat_mean=mean(residual_h_hat);
 
 % Visualization %
 % Sensor readings and ellipoid fit
@@ -192,3 +173,6 @@ fprintf('\nh_m   = Measured sensor data vector');
 fprintf('\nh_hat = Calibrated sensor data vector');
 fprintf('\n\nM =\n'); disp(matrix);
 fprintf('\nb =\n'); disp(offset);
+
+fprintf('\nresidual_h_m_mean ='); disp(residual_h_m_mean);
+fprintf('\nresidual_h_hat_mean ='); disp(residual_h_hat_mean);
