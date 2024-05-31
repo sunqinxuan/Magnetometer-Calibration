@@ -13,8 +13,8 @@ clc
 clear
 close all
 
-
 addpath('.\data')
+addpath('..\m_IGRF')
 
 data_original_filename = 'Flt1002_train.h5';
 line_number = 1002.02; 
@@ -53,7 +53,32 @@ mag_anomaly=read_anomaly_map('Canada_MAG_RES_200m.hdf5',utm_x,utm_y);
 
 mag_diurnal=readH5File(data_original_filename,'/diurnal',i1,i2);
 
+baro=readH5File(data_original_filename,'/baro',i1,i2);
+lat=readH5File(data_original_filename,'/lat',i1,i2);
+lon=readH5File(data_original_filename,'/lon',i1,i2);
+
+mag_earth=zeros(size(lat));
+time = datenum([2020 6 20]); % data of flight 1002
+gh = loadigrfcoefs(time);
+for i=1:size(lat,1)
+    latitude=lat(i);
+    longitude=lon(i);
+    altitude=baro(i)*1e-3;
+    [Bx, By, Bz] = igrf(gh, latitude, longitude, altitude, 'geod');
+    mag_earth(i)=norm([Bx,By,Bz])+mag_anomaly(i)+mag_diurnal(i);
+end
+
 %%
+
+figure;
+plot(tt,mag_earth,'k');hold on;
+plot(tt,mag_1_uc,'r');hold on;
+plot(tt,mag_1_c,'g');hold on;
+plot(tt,mag_1_dc,'b');hold on;
+
+%%
+
+mag_earth_intensity=mean(mag_earth);
 
 % Import raw magnetometer readings
 % file = 'sensor_data.txt'; 
@@ -108,7 +133,12 @@ cx_ = sqrt(p_^2/(a_*c_) + q_^2/(b_*c_) + r_^2/c_^2 - d_/c_);
 
 offset = - M \ u; % Eqn(21)
 gain = [1/ax_, 0, 0; 0, 1/bx_, 0; 0,0,1/cx_];
-matrix = gain*rotation*53975.3;
+matrix = gain*rotation*mag_earth_intensity;
+
+% R=[0,1,0;1,0,0;0,0,1];
+% matrix=matrix*R;
+residual_h_m=zeros(size(tt));
+residual_h_hat=zeros(size(tt));
 
 % Calibration %
 % Memory to calibrated readings 
@@ -126,7 +156,16 @@ for i_iters = 1:length(x_m)
     x_hat(i_iters) = h(1);
     y_hat(i_iters) = h(2);
     z_hat(i_iters) = h(3);
+
+%     residual_h_m(i_iters)=abs(norm(h_hat)-mag_earth(i_iters));
+%     residual_h_hat(i_iters)=abs(norm(h)-mag_earth(i_iters));
+
+    residual_h_m(i_iters)=abs(norm(h_hat)-mag_earth_intensity);
+    residual_h_hat(i_iters)=abs(norm(h)-mag_earth_intensity);
 end
+
+residual_h_m_mean=mean(residual_h_m)
+residual_h_hat_mean=mean(residual_h_hat)
 
 % Visualization %
 % Sensor readings and ellipoid fit
@@ -139,7 +178,7 @@ plot_ellipsoid(v);
 % After calibrations
 % figure;
 scatter3(x_hat, y_hat, z_hat, 'fill', 'MarkerFaceColor', 'blue'); hold on;
-plot_sphere([0,0,0]', 53975.3);
+plot_sphere([0,0,0]', mag_earth_intensity);
 % title({'After magnetometer calibration', '(Normalized to unit sphere)'});
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 axis equal;

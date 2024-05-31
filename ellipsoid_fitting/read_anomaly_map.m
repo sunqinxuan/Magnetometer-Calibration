@@ -21,9 +21,9 @@ for i=1:size(anomaly_map_xx,1)
                 mag_anomaly(1)=anomaly_map(j,i);
                 idx_x=i;
                 idx_y=j;
-                fprintf('x=');disp(x);
-                fprintf('y=');disp(y);
-                fprintf('anomaly=');disp(mag_anomaly(1));
+%                 fprintf('x=');disp(x);
+%                 fprintf('y=');disp(y);
+%                 fprintf('anomaly=');disp(mag_anomaly(1));
                 break;
             end
         end
@@ -43,10 +43,10 @@ else
                     mag_anomaly(i)=anomaly_map(jj,ii);
                     idx_x=ii;
                     idx_y=jj;
-                    disp(i);
-                    fprintf('x=');disp(x);
-                    fprintf('y=');disp(y);
-                    fprintf('anomaly=');disp(mag_anomaly(i));
+%                     disp(i);
+%                     fprintf('x=');disp(x);
+%                     fprintf('y=');disp(y);
+%                     fprintf('anomaly=');disp(mag_anomaly(i));
                     break;
                 end
             end
@@ -55,6 +55,4 @@ else
 end
 
 % figure;
-% imshow(anomaly_map,[]);
-figure;
-imshow(img_traj,[]);
+% imshow(img_traj,[]);

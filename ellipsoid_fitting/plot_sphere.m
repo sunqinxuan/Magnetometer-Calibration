@@ -21,8 +21,8 @@ x = x_c + rho*sin(phi).*cos(theta);
 y = y_c + rho*sin(phi).*sin(theta);
 z = z_c + rho*cos(phi);
 
-m=surf(x,y,z,'FaceColor', 'b', 'EdgeColor', 'none');
-% m = mesh(x,y,z);
-set(m,'facealpha',0.1);
+% m=surf(x,y,z,'FaceColor', 'b', 'EdgeColor', 'none');
+m = mesh(x,y,z);
+set(m,'facealpha',0.4);
 axis equal; hold on; grid on;
 end
