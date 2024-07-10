@@ -24,67 +24,9 @@ lines={1002.02,1002.20};
 % time = datenum([2020 7 6]); 
 % lines={1006.04,1006.04,1006.08};
 
-tt=[];
-x_m=[];
-y_m=[];
-z_m=[];
-mag_earth=[];
-map_idx_x=[];
-map_idx_y=[];
-for i=1:size(lines,2)
-    [tt_tmp,x_m_tmp,y_m_tmp,z_m_tmp,mag_earth_tmp,map_idx_x_tmp,map_idx_y_tmp]=readH5File(data_original_filename, lines{i}, time);
-    tt=[tt;tt_tmp];
-    x_m=[x_m;x_m_tmp];
-    y_m=[y_m;y_m_tmp];
-    z_m=[z_m;z_m_tmp];
-    mag_earth=[mag_earth;mag_earth_tmp];
-    map_idx_x=[map_idx_x;map_idx_x_tmp];
-    map_idx_y=[map_idx_y;map_idx_y_tmp];
-end
-
-anomaly_map= h5read('Canada_MAG_RES_200m.hdf5','/map');
-max_value=max(max(anomaly_map));
-img_traj=anomaly_map;
-for i=1:size(map_idx_x,1)
-    img_traj(map_idx_y(i),map_idx_x(i))=max_value;
-    img_traj(map_idx_y(i)-1,map_idx_x(i))=max_value;
-    img_traj(map_idx_y(i),map_idx_x(i)-1)=max_value;
-    img_traj(map_idx_y(i)+1,map_idx_x(i))=max_value;
-    img_traj(map_idx_y(i),map_idx_x(i)+1)=max_value;
-end
-figure;
-imshow(img_traj,[]);
-
-% line_number = 1002.20; 
-% [tt_2,x_m_2,y_m_2,z_m_2,mag_earth_2]=readH5File(data_original_filename, line_number, time);
-
-% tt=[tt_1;tt_2];
-% x_m=[x_m_1;x_m_2];
-% y_m=[y_m_1;y_m_2];
-% z_m=[z_m_1;z_m_2];
-% mag_earth=[mag_earth_1;mag_earth_2];
-
-% figure;
-% plot(tt,mag_earth,'k');hold on;
-% plot(tt,mag_1_uc,'r');hold on;
-% plot(tt,mag_1_c,'g');hold on;
-% plot(tt,mag_1_dc,'b');hold on;
+[x_m,y_m,z_m,mag_earth_intensity]=loadMITData(data_original_filename, lines, time);
 
 %%
-
-mag_earth_intensity=mean(mag_earth);
-
-% Import raw magnetometer readings
-% file = 'sensor_data.txt'; 
-
-% Import sensor readings
-% raw = importdata(file);
-% x_m = raw(:,1); 
-% y_m = raw(:,2); 
-% z_m = raw(:,3);
-% x_m=flux_b_x;
-% y_m=flux_b_y;
-% z_m=flux_b_z;
 
 % Ellipsoid fit
 % ax^2 + by^2 + cz^2 + 2fyz + 2gxz + 2hxy + 2px + 2qy + 2rz + d = 0
@@ -93,42 +35,13 @@ mag_earth_intensity=mean(mag_earth);
 % u = [p, q, r]'
 v = ellipsoid_fit(x_m, y_m, z_m);
 
-% Unpack ellipsoid coefficients
-a = v(1); b = v(2); c = v(3);
-f = v(4); g = v(5); h = v(6); 
-p = v(7); q = v(8); r = v(9); 
-d = v(10); 
+[matrix,offset]=calculateCalibCoeffs(v,mag_earth_intensity);
 
-% Coordinate frame transformation i.e diagonalize M 
-M =[a, h, g; h, b, f; g, f, c]; % Original ellipsoid matrix 
-u = [p, q, r]';
-k = d;
+cell_str=strsplit(data_original_filename,'_');
+save_mat_name=['model_',cell_str{1,1},'.mat'];
+save(save_mat_name,'matrix','offset','v');
 
-[evec, eval]=eig(M); % Compute eigenvectors matrix
-rotation = evec'; % DCM = eigenvectors matrix
-eval = -eval;
-M_ = evec'*M*evec; % Diagonalize M
-
-% Coefficients of the ellipsoid in new frame
-% Note the ellipsoid is not rotating in this new frame so f, g and h = 0 
-pqr_ = [p,q,r]*evec;   
-a_ = M_(1,1);
-b_ = M_(2,2);
-c_ = M_(3,3);
-p_ = pqr_(1);
-q_ = pqr_(2);
-r_ = pqr_(3);
-d_ = d;
-
-% Semi principal axes (Still no rotation)
-ax_ = sqrt(p_^2/a_^2 + q_^2/(a_*b_) + r_^2/(a_*c_) - d_/a_);
-bx_ = sqrt(p_^2/(a_*b_) + q_^2/b_^2 + r_^2/(b_*c_) - d_/b_);
-cx_ = sqrt(p_^2/(a_*c_) + q_^2/(b_*c_) + r_^2/c_^2 - d_/c_);
-
-offset = - M \ u; % Eqn(21)
-gain = [1/ax_, 0, 0; 0, 1/bx_, 0; 0,0,1/cx_];
-matrix = gain*rotation*mag_earth_intensity;
-
+%%
 % R=[0,1,0;1,0,0;0,0,1];
 % matrix=matrix*R;
 residual_h_m=zeros(size(x_m));
@@ -158,13 +71,10 @@ for i_iters = 1:length(x_m)
     residual_h_hat(i_iters)=abs(norm(h)-mag_earth_intensity);
 end
 
-cell_str=strsplit(data_original_filename,'_');
-save_mat_name=['model_',cell_str{1,1},'.mat'];
-save(save_mat_name,'matrix','offset','v');
-
 residual_h_m_mean=mean(residual_h_m);
 residual_h_hat_mean=mean(residual_h_hat);
 
+%%
 figure;
 % Visualization %
 % Sensor readings and ellipoid fit

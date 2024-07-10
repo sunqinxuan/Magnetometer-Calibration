@@ -1,4 +1,4 @@
-function [] = plot_ellipsoid(v)
+function [] = plot_ellipsoid(v,color)
 % Plots ellipsoid from coefficients of general quadrics equation
 % Result of whole night discussion with Manjul (2020/6/8-9) 
 %
@@ -101,7 +101,8 @@ z_ = reshape(z_,grid_size,grid_size);
 
 % Plot the ellipsoid corresponding to input coefficients
 % m = mesh(x_,y_,z_,'MarkerFaceColor','red');
-m=surf(x_,y_,z_,'FaceColor', 'r', 'EdgeColor', 'none');
+m=surf(x_,y_,z_,'FaceColor', color, 'EdgeColor', 'none');
+% m=surf(x_,y_,z_,'FaceColor', 'r', 'EdgeColor', 'none');
 set(m,'facealpha',0.1);
 hold on; axis equal;
 end

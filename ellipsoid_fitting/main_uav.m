@@ -2,20 +2,52 @@ clc
 clear
 close all
 
-addpath('.\data')
-addpath('..\m_IGRF')
+addpath('.\data\uav\1\mag13\')
+% addpath('..\m_IGRF')
 
-data_original_filename = 'Flt1003_train.h5';
-time = datenum([2020 6 29]);
-lines={1003.02,1003.04,1003.08};
-load('model_Flt1002.mat');
+data_UDAU=readData_UDAU('UDAU_data.txt');
+save_mat_name='model_uav_1.mat';
 
-% data_original_filename = 'Flt1007_train.h5';
-% time = datenum([2020 7 7]);
-% lines={1007.02,1007.06};
-% load('model_Flt1006.mat');
+x_m=data_UDAU(1688:9391,2);
+y_m=data_UDAU(1688:9391,3);
+z_m=data_UDAU(1688:9391,4);
 
-[x_m,y_m,z_m,mag_earth_intensity]=loadMITData(data_original_filename, lines, time);
+intensities=[];
+for i=1:size(x_m,1)
+    m=[x_m(i),y_m(i),z_m(i)];
+%     sum=sum+norm(m);
+    intensities(i)=norm(m);
+end
+% mag_earth_intensity=sum/size(x_m,1); 
+mag_earth_intensity=mean(intensities);
+
+
+%%
+
+% data_original_filename = 'UDAU_data.txt';
+% time = datenum([2020 6 20]); 
+% lines={1002.02,1002.20};
+% 
+% % data_original_filename = 'Flt1006_train.h5';
+% % time = datenum([2020 7 6]); 
+% % lines={1006.04,1006.04,1006.08};
+% 
+% [x_m,y_m,z_m,mag_earth_intensity]=loadMITData(data_original_filename, lines, time);
+
+%%
+
+% Ellipsoid fit
+% ax^2 + by^2 + cz^2 + 2fyz + 2gxz + 2hxy + 2px + 2qy + 2rz + d = 0
+% v = [a, b, c, f, g, h, p, q, r, d]' (in the paper k = -d)
+% M = [a h g; h b f; g f c]
+% u = [p, q, r]'
+v = ellipsoid_fit(x_m, y_m, z_m);
+
+[matrix,offset]=calculateCalibCoeffs(v,mag_earth_intensity);
+
+% cell_str=strsplit(data_original_filename,'_');
+% save_mat_name=['model_',cell_str{1,1},'.mat'];
+save(save_mat_name,'matrix','offset','v');
 
 %%
 % R=[0,1,0;1,0,0;0,0,1];
@@ -55,16 +87,21 @@ figure;
 % Visualization %
 % Sensor readings and ellipoid fit
 scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
-plot_ellipsoid(v); 
+plot_ellipsoid(v,'r'); 
+% title({'Before magnetometer calibration', '(Ellipsoid fit)'});
+% xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
+% axis equal;
 
 % After calibrations
 % figure;
 scatter3(x_hat, y_hat, z_hat, 'fill', 'MarkerFaceColor', 'blue'); hold on;
+v2 = ellipsoid_fit(x_hat, y_hat, z_hat);
+plot_ellipsoid(v2,'b'); 
 plot_sphere([0,0,0]', mag_earth_intensity);
 % title({'After magnetometer calibration', '(Normalized to unit sphere)'});
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 axis equal;
-legend('before calibration: measured data','before calibration: fitted ellipsoid','after calibration: calibrated data','after calibration: sphere');
+legend('before calibration: measured data','before calibration: fitted ellipsoid','after calibration: calibrated data','after calibration: fitted ellipsoid','after calibration: sphere');
 
 % Print calibration params
 fprintf('3D magnetometer calibration based on ellipsoid fitting');
