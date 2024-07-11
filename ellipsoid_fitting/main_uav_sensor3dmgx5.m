@@ -4,33 +4,45 @@ close all
 
 %% 1st flight
 
-save_mat_name='model_uav_1_sensor3dmgx5.mat';
+% save_mat_name='model_uav_1_sensor3dmgx5.mat';
 
-data_mag13=readData_UDAU('.\data\uav\1\mag13\UDAU_data.txt');
-x_mag13=data_mag13(1688:9391,2);
-y_mag13=data_mag13(1688:9391,3);
-z_mag13=data_mag13(1688:9391,4);
-
-data_3dmgx5=readData_csv('.\data\uav\1\sensor3dmgx5\Sensor3dmgx5_2024-07-04-10-02-21.csv');
-x_m=rmmissing(table2array(data_3dmgx5(315:10186,8)))*1e5;
-y_m=rmmissing(table2array(data_3dmgx5(315:10186,9)))*1e5;
-z_m=rmmissing(table2array(data_3dmgx5(315:10186,10)))*1e5;
+% data_mag13=readData_UDAU('.\data\uav\1\mag13\UDAU_data.txt');
+% x_mag13=data_mag13(1688:9391,2);
+% y_mag13=data_mag13(1688:9391,3);
+% z_mag13=data_mag13(1688:9391,4);
+% 
+% data_3dmgx5=readData_csv('.\data\uav\1\sensor3dmgx5\Sensor3dmgx5_2024-07-04-10-02-21.csv');
+% x_m=rmmissing(table2array(data_3dmgx5(315:10186,8)))*1e5;
+% y_m=rmmissing(table2array(data_3dmgx5(315:10186,9)))*1e5;
+% z_m=rmmissing(table2array(data_3dmgx5(315:10186,10)))*1e5;
 
 %% 2nd flight
 
-% data_UDAU=readData_UDAU('.\data\uav\2\mag13\UDAU_data.txt');
-% save_mat_name='model_uav_2_mag13.mat';
-% x_m=data_UDAU(1:7754,2);
-% y_m=data_UDAU(1:7754,3);
-% z_m=data_UDAU(1:7754,4);
+% save_mat_name='model_uav_2_sensor3dmgx5.mat';
+% 
+% data_mag13=readData_UDAU('.\data\uav\2\mag13\UDAU_data.txt');
+% x_mag13=data_mag13(1:7754,2);
+% y_mag13=data_mag13(1:7754,3);
+% z_mag13=data_mag13(1:7754,4);
+% 
+% data_3dmgx5=readData_csv('.\data\uav\2\sensor3dmgx5\Sensor3dmgx5_2024-07-04-10-17-18.csv');
+% x_m=rmmissing(table2array(data_3dmgx5(1:7500,8)))*1e5;
+% y_m=rmmissing(table2array(data_3dmgx5(1:7500,9)))*1e5;
+% z_m=rmmissing(table2array(data_3dmgx5(1:7500,10)))*1e5;
 
 %% 3rd flight
 
-% data_csv=readData_csv('.\data\uav\3\mag13\Mag13_2024-07-10-09-48-03.csv');
-% save_mat_name='model_uav_3_mag13.mat';
-% x_m=table2array(data_csv(1107:10071,2));
-% y_m=table2array(data_csv(1107:10071,3));
-% z_m=table2array(data_csv(1107:10071,4));
+save_mat_name='model_uav_3_sensor3dmgx5.mat';
+
+data_mag13=readData_csv('.\data\uav\3\mag13\Mag13_2024-07-10-09-48-03.csv');
+x_mag13=table2array(data_mag13(1107:10071,2));
+y_mag13=table2array(data_mag13(1107:10071,3));
+z_mag13=table2array(data_mag13(1107:10071,4));
+
+data_3dmgx5=readData_csv('.\data\uav\3\sensor3dmgx5\Sensor3dmgx5_2024-07-10-09-48-03.csv');
+x_m=rmmissing(table2array(data_3dmgx5(670:10700,8)))*1e5;
+y_m=rmmissing(table2array(data_3dmgx5(670:10700,9)))*1e5;
+z_m=rmmissing(table2array(data_3dmgx5(670:10700,10)))*1e5;
 
 %%
 mag_mag13=[];
@@ -51,18 +63,6 @@ end
 % mag_earth_intensity=sum/size(x_m,1); 
 % mag_earth_intensity=mean(mag_3dmgx5);
 
-
-%%
-
-% data_original_filename = 'UDAU_data.txt';
-% time = datenum([2020 6 20]); 
-% lines={1002.02,1002.20};
-% 
-% % data_original_filename = 'Flt1006_train.h5';
-% % time = datenum([2020 7 6]); 
-% % lines={1006.04,1006.04,1006.08};
-% 
-% [x_m,y_m,z_m,mag_earth_intensity]=loadMITData(data_original_filename, lines, time);
 
 %%
 
