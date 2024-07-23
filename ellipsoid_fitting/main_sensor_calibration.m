@@ -79,7 +79,7 @@ figure;
 % Visualization %
 % Sensor readings and ellipoid fit
 scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
-plot_ellipsoid(v); 
+plot_ellipsoid(v,'r'); 
 % title({'Before magnetometer calibration', '(Ellipsoid fit)'});
 % xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 % axis equal;

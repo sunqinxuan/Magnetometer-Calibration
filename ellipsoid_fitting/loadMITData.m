@@ -28,8 +28,8 @@ for i=1:size(map_idx_x,1)
     img_traj(map_idx_y(i)+1,map_idx_x(i))=max_value;
     img_traj(map_idx_y(i),map_idx_x(i)+1)=max_value;
 end
-figure;
-imshow(img_traj,[]);
+% figure;
+% imshow(img_traj,[]);
 
 % line_number = 1002.20; 
 % [tt_2,x_m_2,y_m_2,z_m_2,mag_earth_2]=readH5File(data_original_filename, line_number, time);
