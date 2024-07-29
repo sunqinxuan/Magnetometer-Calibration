@@ -1,0 +1,1 @@
+mag_earth_intensity = 54102.388696
