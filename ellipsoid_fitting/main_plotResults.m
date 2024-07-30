@@ -2,131 +2,83 @@ clc
 clear
 close all
 
-%% 1st flight
+addpath('.\data')
+addpath('..\m_IGRF')
 
-% data_UDAU=readData_UDAU('.\data\uav\1\mag13\UDAU_data.txt');
-% save_mat_name='model_uav_1_mag13.mat';
-% x_m=data_UDAU(1688:9391,2);
-% y_m=data_UDAU(1688:9391,3);
-% z_m=data_UDAU(1688:9391,4);
+data_original_filename = 'Flt1002_train.h5';
+time = datenum([2020 6 20]);
+lines={1002.02,1002.20};
 
-%% 2nd flight
+%% for i=1:size(lines,2)
+i=1;
 
-% data_UDAU=readData_UDAU('.\data\uav\2\mag13\UDAU_data.txt');
-% save_mat_name='model_uav_2_mag13.mat';
-% x_m=data_UDAU(1:7754,2);
-% y_m=data_UDAU(1:7754,3);
-% z_m=data_UDAU(1:7754,4);
+% load data info
+cell_str=strsplit(data_original_filename,'_');
+load_info_file_name=[cell_str{1,1},'_',num2str(lines{i}),'_info.txt'];
+fileID = fopen(load_info_file_name, 'r');
+mag_earth_intensity = fscanf(fileID, 'mag_earth_intensity = %f\n', 1);
+fclose(fileID);
+fprintf('mag_earth_intensity = %.6f\n', mag_earth_intensity);
 
-%% 3rd flight
+% load model 
+D_tilde_inv=load('D_tilde_inv.txt');
+o_hat=load('o_hat.txt');
+R_hat=load('R_hat.txt');
+R_opt=load('R_opt.txt');
 
-data_csv=readData_csv('.\data\uav\3\mag13\Mag13_2024-07-10-09-48-03.csv');
-save_mat_name='model_uav_3_mag13.mat';
-x_m=table2array(data_csv(1107:10071,2));
-y_m=table2array(data_csv(1107:10071,3));
-z_m=table2array(data_csv(1107:10071,4));
+% load data 
+load_file_name=[cell_str{1,1},'_',num2str(lines{i}),'.txt'];
+data=load(load_file_name);
+x_m=data(:,2);
+y_m=data(:,3);
+z_m=data(:,4);
 
-%%
-mag_m=[];
-for i=1:size(x_m,1)
-    m=[x_m(i),y_m(i),z_m(i)];
-%     sum=sum+norm(m);
-    mag_m(i)=norm(m);
-end
-% mag_earth_intensity=sum/size(x_m,1); 
-mag_earth_intensity=mean(mag_m);
-
-
-%%
-
-% data_original_filename = 'UDAU_data.txt';
-% time = datenum([2020 6 20]); 
-% lines={1002.02,1002.20};
-% 
-% % data_original_filename = 'Flt1006_train.h5';
-% % time = datenum([2020 7 6]); 
-% % lines={1006.04,1006.04,1006.08};
-% 
-% [x_m,y_m,z_m,mag_earth_intensity]=loadMITData(data_original_filename, lines, time);
-
-%%
-
-% Ellipsoid fit
-% ax^2 + by^2 + cz^2 + 2fyz + 2gxz + 2hxy + 2px + 2qy + 2rz + d = 0
-% v = [a, b, c, f, g, h, p, q, r, d]' (in the paper k = -d)
-% M = [a h g; h b f; g f c]
-% u = [p, q, r]'
-v = ellipsoid_fit(x_m, y_m, z_m);
-
-[matrix,offset]=calculateCalibCoeffs(v,mag_earth_intensity);
-
-% cell_str=strsplit(data_original_filename,'_');
-% save_mat_name=['model_',cell_str{1,1},'.mat'];
-save(save_mat_name,'matrix','offset','v');
-
-%%
-% R=[0,1,0;1,0,0;0,0,1];
-% matrix=matrix*R;
-residual_h_m=zeros(size(x_m));
-residual_h_hat=zeros(size(x_m));
-
-% Calibration %
-% Memory to calibrated readings 
-x_hat = zeros(length(x_m),1); 
-y_hat = zeros(length(x_m),1); 
-z_hat = zeros(length(x_m),1);
-for i_iters = 1:length(x_m)
-    % Sensor data
-    h_hat = [x_m(i_iters); y_m(i_iters); z_m(i_iters)]; 
-    
-    % Calibration, Eqn(11)
-    h = matrix*(h_hat - offset);
-    
-    % Calibrated values
-    x_hat(i_iters) = h(1);
-    y_hat(i_iters) = h(2);
-    z_hat(i_iters) = h(3);
-
-%     residual_h_m(i_iters)=abs(norm(h_hat)-mag_earth(i_iters));
-%     residual_h_hat(i_iters)=abs(norm(h)-mag_earth(i_iters));
-
-    residual_h_m(i_iters)=abs(norm(h_hat)-mag_earth_intensity);
-    residual_h_hat(i_iters)=abs(norm(h)-mag_earth_intensity);
+ins_pitch=data(:,5);
+ins_roll=data(:,6);
+ins_yaw=data(:,7);
+x_n=data(:,8);
+y_n=data(:,9);
+z_n=data(:,10);
+x_b = zeros(length(x_m),1); 
+y_b = zeros(length(x_m),1); 
+z_b = zeros(length(x_m),1);
+for k=1:size(x_m,1)
+    R_nb=euler2dcm(ins_roll(k),ins_pitch(k),ins_yaw(k));
+    h_n=[x_n(k);y_n(k);z_n(k)];
+    h_b=R_nb'*h_n;
+    x_b(k)=h_b(1);
+    y_b(k)=h_b(2);
+    z_b(k)=h_b(3);
 end
 
-residual_h_m_mean=mean(residual_h_m);
-residual_h_hat_mean=mean(residual_h_hat);
+% apply model
+matrix=R_hat'*D_tilde_inv;
+offset=o_hat;
+[x_hat,y_hat,z_hat]=applyModel(x_m,y_m,z_m,mag_earth_intensity,matrix,offset);
+plotResults(x_m,y_m,z_m,x_hat,y_hat,z_hat,mag_earth_intensity);
+plotResults2(x_b,y_b,z_b,x_hat,y_hat,z_hat,mag_earth_intensity);
 
-%%
-figure;
-% Visualization %
-% Sensor readings and ellipoid fit
-scatter3(x_m, y_m, z_m, 'fill', 'MarkerFaceColor', 'red'); hold on; 
-plot_ellipsoid(v,'r'); 
-% title({'Before magnetometer calibration', '(Ellipsoid fit)'});
-% xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
-% axis equal;
+% apply model
+matrix=R_opt'*D_tilde_inv;
+offset=o_hat;
+[x_hat,y_hat,z_hat]=applyModel(x_m,y_m,z_m,mag_earth_intensity,matrix,offset);
+plotResults(x_m,y_m,z_m,x_hat,y_hat,z_hat,mag_earth_intensity);
+plotResults2(x_b,y_b,z_b,x_hat,y_hat,z_hat,mag_earth_intensity);
 
-% After calibrations
-% figure;
-scatter3(x_hat, y_hat, z_hat, 'fill', 'MarkerFaceColor', 'blue'); hold on;
-v2 = ellipsoid_fit(x_hat, y_hat, z_hat);
-plot_ellipsoid(v2,'b'); 
-plot_sphere([0,0,0]', mag_earth_intensity);
-% title({'After magnetometer calibration', '(Normalized to unit sphere)'});
-xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
-axis equal;
-legend('before calibration: measured data','before calibration: fitted ellipsoid','after calibration: calibrated data','after calibration: fitted ellipsoid','after calibration: sphere');
+% apply model
+matrix1=D_tilde_inv;
+offset1=o_hat;
+[x_hat1,y_hat1,z_hat1]=applyModel(x_m,y_m,z_m,mag_earth_intensity,matrix1,offset1);
+plotResults2(x_b,y_b,z_b,x_hat1,y_hat1,z_hat1,mag_earth_intensity);
 
 % Print calibration params
 fprintf('3D magnetometer calibration based on ellipsoid fitting');
 fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
 fprintf('\nThe calibration equation to be implemented:') 
-fprintf('\n\t\t\t\th_hat = M*(h_m - b) \nWhere,')
+fprintf('\n\t\t\t\th_hat = matrix*(h_m - offset) \nWhere,')
 fprintf('\nh_m   = Measured sensor data vector');
 fprintf('\nh_hat = Calibrated sensor data vector');
-fprintf('\n\nM =\n'); disp(matrix);
-fprintf('\nb =\n'); disp(offset);
+fprintf('\n\nmatrix =\n'); disp(matrix);
+fprintf('\noffset =\n'); disp(offset);
 
-fprintf('\nresidual_h_m_mean ='); disp(residual_h_m_mean);
-fprintf('\nresidual_h_hat_mean ='); disp(residual_h_hat_mean);
+% end
