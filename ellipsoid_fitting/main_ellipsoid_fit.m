@@ -58,7 +58,7 @@ v = ellipsoid_fit(x,y,z);
 
 % Plot result
 plot3(x,y,z,'.','MarkerSize',15); hold on; 
-plot_ellipsoid(v);
+plot_ellipsoid(v,'r');
 xlabel('X-axis'); ylabel('Y-axis'); zlabel('Z-axis');
 title('Ellipsoid fit');
 grid on;

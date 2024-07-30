@@ -1,1 +1,3 @@
 mag_earth_intensity = 54085.193196
+saved data field: 
+ time, flux_xyz, ins_pry, igrf_ned 

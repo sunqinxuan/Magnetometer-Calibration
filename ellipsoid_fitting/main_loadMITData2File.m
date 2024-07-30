@@ -75,6 +75,7 @@ for i=1:size(lines,2)
         error('cannot open file!');
     end
     fprintf(fileID,'mag_earth_intensity = %f\n',mag_earth_intensity);
+    fprintf(fileID,'saved data field: \n time, flux_xyz, ins_pry, igrf_ned \n');
     fclose(fileID);
     
     % show flight trajectory on anomaly map;
